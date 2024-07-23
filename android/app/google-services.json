@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "904930452639",
+    "project_id": "societyserve-485e7",
+    "storage_bucket": "societyserve-485e7.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:904930452639:android:073b4f48921362bd7d2eaa",
+        "android_client_info": {
+          "package_name": "com.societyserve"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDbKNuXeVbsBX_YqGZK_nQ9rfXPX6swYEA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
