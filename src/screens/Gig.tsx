@@ -77,8 +77,8 @@ const Gig = () => {
 
   const renderItem = ({ item }: { item: GigItem }) => (
     <View style={styles.gigContainer}>
-      <Image source={require('../assets/images/plumber.jpg')} style={styles.coverPhoto} />
-      <Image source={require('../assets/images/plumber.jpg')} style={styles.profilePhoto} />
+      <Image source={{uri:item.coverPhoto}} style={styles.coverPhoto} />
+      <Image source={{uri:item.profilePhoto}} style={styles.profilePhoto} />
       <Text style={styles.title}>{item.title}</Text>
       <Text style={styles.category}>{item.category}</Text>
       <Text style={styles.price}>Price: ${item.price}</Text>

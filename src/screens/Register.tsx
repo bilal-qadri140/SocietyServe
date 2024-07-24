@@ -38,8 +38,15 @@ const Register = ({ navigation, route }: NavigationProps) => {
   const [isSeller, setIsSeller] = useState(false);
 
   const registerUser = async (values: any) => {
-    const { username, email, password, country, phoneNumber, description } =
-      values;
+    const {
+      username,
+      email,
+      password,
+      country,
+      phoneNumber,
+      description,
+      photoURL,
+    } = values;
     try {
       // Create user with email and password
       const userCredential = await auth().createUserWithEmailAndPassword(
@@ -58,6 +65,7 @@ const Register = ({ navigation, route }: NavigationProps) => {
           country,
           description,
           phoneNumber,
+          photoURL,
         });
         console.log("User registered successfully!");
         ToastAndroid.show("User created Successfully", ToastAndroid.LONG);
@@ -68,19 +76,19 @@ const Register = ({ navigation, route }: NavigationProps) => {
       ToastAndroid.show(error.message, ToastAndroid.LONG);
     }
   };
-
-  const chooseProfilePicture = async () => {
-    try {
-      const image = await ImagePicker.openPicker({
-        width: 300,
-        height: 400,
-        cropping: true,
-      });
-      setProfilePicture(image.path);
-    } catch (error) {
-      console.log(error);
-    }
-  };
+ const pickImage = (setImage: any) => {
+   ImagePicker.openPicker({
+     width: 300,
+     height: 400,
+     cropping: true,
+   })
+     .then((image) => {
+       setImage(image.path);
+     })
+     .catch((error) => {
+       console.log("Error picking image: ", error);
+     });
+ };
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
@@ -93,6 +101,7 @@ const Register = ({ navigation, route }: NavigationProps) => {
           country: "",
           phoneNumber: "",
           description: "",
+          photoUrl: "",
         }}
         validationSchema={validationSchema}
         onSubmit={(values) => registerUser(values)}
@@ -104,6 +113,7 @@ const Register = ({ navigation, route }: NavigationProps) => {
           values,
           errors,
           touched,
+          setFieldValue,
         }) => (
           <View>
             <TextInput
@@ -188,7 +198,9 @@ const Register = ({ navigation, route }: NavigationProps) => {
             </View>
             <TouchableOpacity
               style={styles.fileButton}
-              onPress={chooseProfilePicture}
+              onPress={() =>
+                pickImage((path: any) => setFieldValue("coverPhoto", path))
+              }
             >
               <Text style={styles.fileButtonText}>Choose Profile Picture</Text>
             </TouchableOpacity>
@@ -229,8 +241,8 @@ const styles = StyleSheet.create({
   },
   input: {
     height: 40,
-    borderColor: "#ccc",
-    borderWidth: 1,
+    borderColor: "#1dbf73",
+    borderWidth: 1.5,
     marginBottom: 16,
     paddingHorizontal: 8,
     borderRadius: 5,

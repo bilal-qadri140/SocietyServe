@@ -1,12 +1,17 @@
 import React, { useEffect, useState } from "react";
-import { StyleSheet, View, Button, Alert } from "react-native";
+import { StyleSheet, View, Button, Alert, Platform } from "react-native";
 import { CardField, useStripe } from "@stripe/stripe-react-native";
 import { Screen } from "react-native-screens";
 
 const Payment = () => {
   const { initPaymentSheet, presentPaymentSheet } = useStripe();
   const [loading, setLoading] = useState(false);
-  const API_URL = "http://10.0.2.2:3000"; // Change this to your server's IP address if on a physical device
+
+  // Define API URL based on the platform
+  const API_URL =
+    Platform.OS === "android" && !__DEV__
+      ? "http://localhost:3000"
+      : "http://10.0.2.2:3000";
 
   const fetchPaymentSheetParams = async () => {
     try {
@@ -18,11 +23,19 @@ const Payment = () => {
         },
       });
       if (!response.ok) {
-        console.error("Failed to fetch payment sheet parameters", response.status, response.statusText);
+        console.error(
+          "Failed to fetch payment sheet parameters",
+          response.status,
+          response.statusText
+        );
         throw new Error(`Network response was not ok: ${response.statusText}`);
       }
       const { paymentIntent, ephemeralKey, customer } = await response.json();
-      console.log("Fetched payment sheet parameters:", { paymentIntent, ephemeralKey, customer });
+      console.log("Fetched payment sheet parameters:", {
+        paymentIntent,
+        ephemeralKey,
+        customer,
+      });
       return {
         paymentIntent,
         ephemeralKey,
@@ -36,7 +49,8 @@ const Payment = () => {
 
   const initializePaymentSheet = async () => {
     try {
-      const { paymentIntent, ephemeralKey, customer } = await fetchPaymentSheetParams();
+      const { paymentIntent, ephemeralKey, customer } =
+        await fetchPaymentSheetParams();
       const { error } = await initPaymentSheet({
         merchantDisplayName: "Example, Inc.",
         customerId: customer,
@@ -77,11 +91,7 @@ const Payment = () => {
 
   return (
     <Screen>
-      <Button
-        title="Checkout"
-        onPress={openPaymentSheet}
-        disabled={!loading}
-      />
+      <Button title="Checkout" onPress={openPaymentSheet} disabled={!loading} />
     </Screen>
   );
 };

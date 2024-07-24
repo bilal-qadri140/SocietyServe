@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React from "react";
 import {
   StyleSheet,
   Text,
@@ -14,13 +14,14 @@ import { Formik } from "formik";
 import * as Yup from "yup";
 import auth from "@react-native-firebase/auth";
 import firestore from "@react-native-firebase/firestore";
+import storage from "@react-native-firebase/storage"; 
 import { RootStackParamList } from "../../App";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
+
 // Validation schema
 const validationSchema = Yup.object().shape({
   title: Yup.string().required("Title is required"),
   category: Yup.string().required("Category is required"),
-  service: Yup.string().required("Service title is required"),
   description: Yup.string().required("Description is required"),
   deliveryTime: Yup.string().required("Delivery time is required"),
   features: Yup.string().required("Features are required"),
@@ -28,25 +29,24 @@ const validationSchema = Yup.object().shape({
     .typeError("Price must be a number")
     .positive("Price must be a positive number")
     .required("Price is required"),
-  // coverPhoto: Yup.string().required("Cover photo is required"),
-  // profileImage: Yup.string().required("Profile image is required"),
+  phoneNumber: Yup.string().required("Phone number is required"),
 });
 
 type ValueType = {
   title: string;
   category: string;
-  service: string;
   description: string;
   deliveryTime: string;
   features: string;
   price: string;
   coverPhoto: string;
   profileImage: string;
+  phoneNumber: string;
 };
 
 type NavigationProps = NativeStackScreenProps<RootStackParamList>;
 
-const Add = ({ navigation, route }: NavigationProps) => {
+const Add = ({ navigation }: NavigationProps) => {
   const categories = [
     "Plumbing",
     "Motor Mechanics",
@@ -79,26 +79,53 @@ const Add = ({ navigation, route }: NavigationProps) => {
     setFieldValue("features", featuresArray.join(", "));
   };
 
+  const uploadImage = async (path: string, name: string) => {
+    try {
+      const reference = storage().ref(name);
+      await reference.putFile(path);
+      const url = await reference.getDownloadURL();
+      return url;
+    } catch (error) {
+      console.error("Error uploading image: ", error);
+      throw error;
+    }
+  };
+
   const createGig = async (values: ValueType) => {
-    // Implement create gig functionality here
-    console.log(values);
-    // ToastAndroid.show("Gig created successfully!", ToastAndroid.LONG);
-    const uid = auth().currentUser?.uid;
-    console.log({ uid });
-    await firestore()
-      .collection("gigs")
-      .doc(uid)
-      .set({
-        values,
-      })
-      .then(async () => {
-        console.log("Data inserted!");
-        const user = await firestore().collection("gigs").doc(uid).get();
-        console.log("User: ", user.data());
-      })
-      .catch((err) => {
-        console.log(err);
-      });
+    try {
+      // Upload images to Firebase Storage and get URLs
+      const coverPhotoUrl = await uploadImage(
+        values.coverPhoto,
+        `coverPhotos/${Date.now()}`
+      );
+      const profileImageUrl = await uploadImage(
+        values.profileImage,
+        `profileImages/${Date.now()}`
+      );
+
+      // Get current user ID
+      const uid = auth().currentUser?.uid;
+
+      // Create gig data with image URLs
+      const data = {
+        ...values,
+        coverPhoto: coverPhotoUrl,
+        profileImage: profileImageUrl,
+        createdBy: uid,
+      };
+
+      // Add gig data to Firestore
+      await firestore()
+        .collection("gigs")
+        .add(data)
+        .then(() => {
+          ToastAndroid.show("Gig created successfully", ToastAndroid.LONG);
+          navigation.navigate("Home");
+        });
+    } catch (error) {
+      console.error("Error creating gig: ", error);
+      ToastAndroid.show("Failed to create gig", ToastAndroid.LONG);
+    }
   };
 
   return (
@@ -109,13 +136,13 @@ const Add = ({ navigation, route }: NavigationProps) => {
         initialValues={{
           title: "",
           category: "",
-          service: "",
           description: "",
           deliveryTime: "",
           features: "",
           price: "",
           coverPhoto: "",
           profileImage: "",
+          phoneNumber: "",
         }}
         validationSchema={validationSchema}
         onSubmit={(values) => createGig(values)}
@@ -132,7 +159,7 @@ const Add = ({ navigation, route }: NavigationProps) => {
           <View>
             <TextInput
               style={styles.input}
-              placeholder="Title"
+              placeholder="Service Title"
               value={values.title}
               onChangeText={handleChange("title")}
               onBlur={handleBlur("title")}
@@ -155,43 +182,6 @@ const Add = ({ navigation, route }: NavigationProps) => {
             />
             {touched.category && errors.category && (
               <Text style={styles.errorText}>{errors.category}</Text>
-            )}
-
-            <TouchableOpacity
-              onPress={() =>
-                pickImage((path: any) => setFieldValue("coverPhoto", path))
-              }
-              style={styles.imagePicker}
-            >
-              <Text>Choose Cover Photo</Text>
-              {values.coverPhoto && <Text>{values.coverPhoto}</Text>}
-            </TouchableOpacity>
-            {touched.coverPhoto && errors.coverPhoto && (
-              <Text style={styles.errorText}>{errors.coverPhoto}</Text>
-            )}
-
-            <TouchableOpacity
-              onPress={() =>
-                pickImage((path: any) => setFieldValue("profileImage", path))
-              }
-              style={styles.imagePicker}
-            >
-              <Text>Choose Profile Image</Text>
-              {values.profileImage && <Text>{values.profileImage}</Text>}
-            </TouchableOpacity>
-            {touched.profileImage && errors.profileImage && (
-              <Text style={styles.errorText}>{errors.profileImage}</Text>
-            )}
-
-            <TextInput
-              style={styles.input}
-              placeholder="Service Title"
-              value={values.service}
-              onChangeText={handleChange("service")}
-              onBlur={handleBlur("service")}
-            />
-            {touched.service && errors.service && (
-              <Text style={styles.errorText}>{errors.service}</Text>
             )}
 
             <TextInput
@@ -241,13 +231,59 @@ const Add = ({ navigation, route }: NavigationProps) => {
             {touched.price && errors.price && (
               <Text style={styles.errorText}>{errors.price}</Text>
             )}
+            <TextInput
+              style={styles.input}
+              placeholder="Phone Number"
+              value={values.phoneNumber}
+              onChangeText={handleChange("phoneNumber")}
+              onBlur={handleBlur("phoneNumber")}
+              keyboardType="numeric"
+            />
+            {touched.phoneNumber && errors.phoneNumber && (
+              <Text style={styles.errorText}>{errors.phoneNumber}</Text>
+            )}
 
             <TouchableOpacity
+              onPress={() =>
+                pickImage((path: any) => setFieldValue("coverPhoto", path))
+              }
+              style={styles.imagePicker}
+            >
+              <Text
+                style={{
+                  color: "#1dbf73",
+                  fontWeight: "bold",
+                }}
+              >
+                {values.coverPhoto ? "Selected" : "Choose Cover Photo"}
+              </Text>
+            </TouchableOpacity>
+            {touched.coverPhoto && errors.coverPhoto && (
+              <Text style={styles.errorText}>{errors.coverPhoto}</Text>
+            )}
+
+            <TouchableOpacity
+              onPress={() =>
+                pickImage((path: any) => setFieldValue("profileImage", path))
+              }
+              style={styles.imagePicker}
+            >
+              <Text
+                style={{
+                  color: "#1dbf73",
+                  fontWeight: "bold",
+                }}
+              >
+                {values.profileImage ? "Selected" : "Choose Profile Image"}
+              </Text>
+            </TouchableOpacity>
+
+            {touched.profileImage && errors.profileImage && (
+              <Text style={styles.errorText}>{errors.profileImage}</Text>
+            )}
+            <TouchableOpacity
               style={styles.button}
-              onPress={() => {
-                // handleSubmit();
-                navigation.navigate('DrawerNavigation')
-              }}
+              onPress={() => handleSubmit()}
             >
               <Text style={styles.buttonText}>Create</Text>
             </TouchableOpacity>
@@ -274,18 +310,20 @@ const styles = StyleSheet.create({
   },
   input: {
     height: 40,
-    borderColor: "gray",
-    borderWidth: 1,
+    borderColor: "#1dbf73",
+    borderWidth: 1.5,
     marginBottom: 10,
     padding: 10,
+    borderRadius: 4,
   },
   dropdown: {
     height: 40,
-    borderColor: "gray",
-    borderWidth: 1,
+    borderColor: "#1dbf73",
+    borderWidth: 1.5,
     marginBottom: 10,
     justifyContent: "center",
     paddingLeft: 10,
+    borderRadius: 4,
   },
   dropdownText: {
     fontSize: 16,
@@ -303,17 +341,18 @@ const styles = StyleSheet.create({
   imagePicker: {
     alignItems: "center",
     justifyContent: "center",
-    borderColor: "gray",
-    borderWidth: 1,
+    borderColor: "#1dbf73",
+    borderWidth: 1.5,
     height: 50,
     marginBottom: 10,
-    backgroundColor: "#f5f",
+    backgroundColor: "#fff",
+    borderRadius: 15,
   },
   button: {
     backgroundColor: "#1dbf73",
     padding: 10,
     alignItems: "center",
-    borderRadius: 5,
+    borderRadius: 15,
     marginBottom: 50,
   },
   buttonText: {

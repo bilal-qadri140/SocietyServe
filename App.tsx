@@ -26,6 +26,7 @@ import {
   DrawerItem,
   DrawerItemList,
 } from "@react-navigation/drawer";
+import CustomDrawer from "./src/screens/CustomDrawer";
 
 // params for Navigations
 export type RootStackParamList = {
@@ -36,7 +37,15 @@ export type RootStackParamList = {
   MyGig: undefined;
   Add: undefined;
   Message: undefined;
-  Request: undefined;
+  Request: {
+    userId: number;
+    serviceProviderId: number;
+    category: string;
+    profileImage: string;
+    coverPhoto: string;
+    phoneNumber: string;
+    description: string
+  };
   Post: undefined;
   Login: undefined;
   Register: undefined;
@@ -57,44 +66,43 @@ const DrawerNavigation = () => {
 
   return (
     <Drawer.Navigator
-      drawerContent={(props) => <CustomDrawerContent {...props} />}
+      screenOptions={
+        {
+          // headerShown : false,
+        }
+      }
+      drawerContent={(props) => <CustomDrawer {...props} />}
     >
       <Drawer.Screen name="Home" component={Home} />
       <Drawer.Screen name="Add" component={Add} />
       <Drawer.Screen name="AllGig" component={AllGig} />
       <Drawer.Screen name="Gig" component={Gig} />
-      <Drawer.Screen name="Order" component={Order} />
-      <Drawer.Screen name="MyGig" component={MyGig} />
       <Drawer.Screen name="Message" component={Message} />
-      <Drawer.Screen name="Request" component={Request} />
-      <Drawer.Screen name="Post" component={Post} />
-      <Drawer.Screen name="Login" component={Login} />
-      <Drawer.Screen name="Register" component={Register} />
-      <Drawer.Screen name="Payment" component={Payment} />
-      <Drawer.Screen name="Success" component={Success} />
-      <Drawer.Screen name="Bid" component={Bid} />
     </Drawer.Navigator>
   );
 };
 
-function CustomDrawerContent(props: any) {
-  return (
-    <DrawerContentScrollView {...props}>
-      <DrawerItemList {...props} />
-      <DrawerItem
-        label="Help"
-        onPress={() => Linking.openURL("https://www.google.com")}
-      />
-    </DrawerContentScrollView>
-  );
-}
 const App = () => {
   const Stack = createNativeStackNavigator<RootStackParamList>();
   return (
     <NavigationContainer>
-      <Stack.Navigator initialRouteName="Add">
-        <Stack.Screen name="Add" component={Add} />
+      <Stack.Navigator
+        initialRouteName="DrawerNavigation"
+        screenOptions={{
+          headerShown: false,
+        }}
+      >
         <Stack.Screen name="DrawerNavigation" component={DrawerNavigation} />
+        {/* <Stack.Screen name="Gig" component={Gig} /> */}
+        <Stack.Screen name="Order" component={Order} />
+        {/* <Stack.Screen name="Message" component={Message} /> */}
+        <Stack.Screen name="Post" component={Post} />
+        <Stack.Screen name="Login" component={Login} />
+        <Stack.Screen name="Register" component={Register} />
+        <Stack.Screen name="Payment" component={Payment} />
+        <Stack.Screen name="Success" component={Success} />
+        <Stack.Screen name="Bid" component={Bid} />
+        <Stack.Screen name="Request" component={Request} />
       </Stack.Navigator>
     </NavigationContainer>
   );

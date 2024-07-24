@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
   Button,
   StyleSheet,
@@ -11,12 +11,14 @@ import {
   TouchableOpacity,
   Alert,
   ToastAndroid,
+  Linking,
 } from "react-native";
 import { RootStackParamList } from "../../App";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import Icon from "react-native-vector-icons/FontAwesome";
 import auth from "@react-native-firebase/auth";
-
+import firestore from "@react-native-firebase/firestore";
+import { useFocusEffect } from "@react-navigation/native";
 type NavigationProps = NativeStackScreenProps<RootStackParamList>;
 
 const DATA = [
@@ -45,9 +47,10 @@ const DATA = [
 ];
 
 const Home = ({ navigation, route }: NavigationProps) => {
+  const [gigData, setGigData] = useState<any>();
+  const [serviceProviderId, setServiceProviderId] = useState<number>(0);
 
-  console.log(auth().currentUser)
-
+  console.log(auth().currentUser);
 
   const handleCreateGig = () => {
     if (auth().currentUser) {
@@ -56,6 +59,36 @@ const Home = ({ navigation, route }: NavigationProps) => {
       Alert.alert("Not Logged in", "Please login before creating new Gig!");
       navigation.navigate("Login");
     }
+  };
+
+  const fetchGigs = async () => {
+    const gigsSnapshot = (await firestore().collection("gigs").get()).docs;
+    const gigs: { id: string }[] = [];
+    gigsSnapshot.forEach((doc) => {
+      gigs.push({ id: doc.id, ...doc.data() });
+    });
+    console.log(gigs);
+    setServiceProviderId(Number(gigs[0].id));
+    setGigData(gigs);
+  };
+  const truncateText = (text: string, maxLength: number) => {
+    if (text.length > maxLength) {
+      return text.substring(0, maxLength) + "...";
+    }
+    return text;
+  };
+
+  useFocusEffect(
+    useCallback(() => {
+      fetchGigs();
+      console.log("data after: ", gigData);
+    }, [])
+  );
+
+  useEffect(() => {}, []);
+
+  const handlePress = (url: string) => {
+    Linking.openURL(url);
   };
 
   return (
@@ -78,12 +111,28 @@ const Home = ({ navigation, route }: NavigationProps) => {
           </TouchableOpacity>
           <TouchableOpacity
             activeOpacity={0.6}
-            style={styles.loginButton}
+            style={[
+              styles.loginButton,
+              {
+                backgroundColor: "#fff",
+                borderColor: "#1dbf73",
+                borderWidth: 1.5,
+              },
+            ]}
             onPress={() => {
-              navigation.navigate("Gig");
+              navigation.navigate("Register");
             }}
           >
-            <Text style={styles.buttonText}>Join</Text>
+            <Text
+              style={[
+                styles.buttonText,
+                {
+                  color: "#1dbf73",
+                },
+              ]}
+            >
+              Join
+            </Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -102,12 +151,28 @@ const Home = ({ navigation, route }: NavigationProps) => {
       <FlatList
         horizontal
         showsHorizontalScrollIndicator={false}
-        data={DATA}
+        data={gigData}
         renderItem={({ item }) => (
-          <TouchableOpacity style={styles.card} activeOpacity={0.8}>
-            <Image source={item.image} style={styles.cardImage} />
-            <Text style={styles.cardTitle}>{item.title}</Text>
-            <Text style={styles.cardSubtitle}>{item.subtitle}</Text>
+          <TouchableOpacity
+            style={styles.card}
+            activeOpacity={0.8}
+            onPress={() => {
+              navigation.navigate("Request", {
+                userId: Number(auth().currentUser?.uid),
+                category: item.category,
+                profileImage: item.profileImage,
+                coverPhoto: item.coverPhoto,
+                phoneNumber: item.phoneNumber,
+                serviceProviderId: item.serviceProviderId,
+                description: item.description,
+              });
+            }}
+          >
+            <Image source={{ uri: item.coverPhoto }} style={styles.cardImage} />
+            <Text style={styles.cardTitle}>{item.category}</Text>
+            <Text style={styles.cardSubtitle}>
+              {truncateText(item.description, 20)}
+            </Text>
             <Text style={[styles.cardPrice, { color: "#1dbf73" }]}>
               {item.price}
             </Text>
@@ -134,30 +199,38 @@ const Home = ({ navigation, route }: NavigationProps) => {
             Create your Professional account now
           </Text>
         </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.professionalButton, { marginTop: 10 }]}
-          onPress={async () => {
-            await auth().signOut().then(() => {
-              ToastAndroid.show('Signs Out',ToastAndroid.LONG)
-            })
-          }}
-        >
-          <Text style={styles.professionalButtonText}>Sign Out</Text>
-        </TouchableOpacity>
       </View>
 
       <View style={styles.footer}>
+        <View style={styles.socialLinks}>
+          <Text style={{ fontSize: 20, fontWeight: "bold", marginBottom: 5 }}>
+            Contact us.
+          </Text>
+          <TouchableOpacity
+            onPress={() =>
+              handlePress("https://www.facebook.com/bilalqadri.bilalqadri.77")
+            }
+          >
+            <Text style={styles.socialLink}>Facebook</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={() => handlePress("https://www.twitter.com")}
+          >
+            <Text style={styles.socialLink}>Twitter</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={() => handlePress("https://www.instagram.com")}
+          >
+            <Text style={styles.socialLink}>Instagram</Text>
+          </TouchableOpacity>
+        </View>
         <View style={styles.categorySection}>
+          <Text style={{ fontSize: 20, fontWeight: "bold", marginBottom: 5 }}>
+            Categories
+          </Text>
           <Text style={styles.category}>Plumbing</Text>
           <Text style={styles.category}>Electrician</Text>
           <Text style={styles.category}>Loader</Text>
-          {/* Add more categories as needed */}
-        </View>
-        <View style={styles.socialLinks}>
-          <Text style={styles.socialLink}>Facebook</Text>
-          <Text style={styles.socialLink}>Twitter</Text>
-          <Text style={styles.socialLink}>Instagram</Text>
-          {/* Add more social links as needed */}
         </View>
       </View>
     </ScrollView>
@@ -186,10 +259,11 @@ const styles = StyleSheet.create({
     textAlignVertical: "center",
   },
   loginButtonContainer: {
-    width: "50%",
+    width: "55%",
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-around",
+    // backgroundColor:'red'
   },
   loginButton: {
     alignItems: "center",
@@ -197,11 +271,13 @@ const styles = StyleSheet.create({
     backgroundColor: "#1dbf73",
     borderRadius: 16,
     width: 88,
-    height: 48,
+    height: 40,
+    marginHorizontal: 3,
   },
   buttonText: {
     color: "#fff",
     fontSize: 24,
+    textAlign: "center",
   },
   heading: {
     fontSize: 24,
@@ -307,24 +383,33 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
   },
   footer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
     padding: 20,
-    backgroundColor: "#4a90e2",
+    backgroundColor: "#1dbf73",
+    borderTopWidth: 1,
+    borderColor: "#ccc",
   },
   categorySection: {
-    flexDirection: "row",
-    justifyContent: "space-around",
-    marginBottom: 20,
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "flex-end",
   },
   category: {
     fontSize: 16,
+    marginBottom: 10,
+    fontWeight: "bold",
     color: "#fff",
   },
   socialLinks: {
-    flexDirection: "row",
-    justifyContent: "space-around",
+    flex: 1,
+    justifyContent: "center",
+    borderRightWidth: 1.5,
   },
   socialLink: {
     fontSize: 16,
     color: "#fff",
+    marginBottom: 10,
+    fontWeight: "bold",
   },
 });
