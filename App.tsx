@@ -76,7 +76,6 @@ const DrawerNavigation = () => {
       <Drawer.Screen name="Home" component={Home} />
       <Drawer.Screen name="Add" component={Add} />
       <Drawer.Screen name="AllGig" component={AllGig} />
-      <Drawer.Screen name="Gig" component={Gig} />
       <Drawer.Screen name="Message" component={Message} />
     </Drawer.Navigator>
   );

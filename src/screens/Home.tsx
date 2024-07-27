@@ -174,7 +174,7 @@ const Home = ({ navigation, route }: NavigationProps) => {
               {truncateText(item.description, 20)}
             </Text>
             <Text style={[styles.cardPrice, { color: "#1dbf73" }]}>
-              {item.price}
+              ${item.price}
             </Text>
           </TouchableOpacity>
         )}

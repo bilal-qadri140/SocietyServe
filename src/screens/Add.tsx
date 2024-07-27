@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import {
   StyleSheet,
   Text,
@@ -14,7 +14,7 @@ import { Formik } from "formik";
 import * as Yup from "yup";
 import auth from "@react-native-firebase/auth";
 import firestore from "@react-native-firebase/firestore";
-import storage from "@react-native-firebase/storage"; 
+import storage from "@react-native-firebase/storage";
 import { RootStackParamList } from "../../App";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 
@@ -32,6 +32,31 @@ const validationSchema = Yup.object().shape({
   phoneNumber: Yup.string().required("Phone number is required"),
 });
 
+import { PermissionsAndroid, Platform } from "react-native";
+
+const requestStoragePermission = async () => {
+  if (Platform.OS === "android") {
+    try {
+      const granted = await PermissionsAndroid.requestMultiple([
+        PermissionsAndroid.PERMISSIONS.READ_EXTERNAL_STORAGE,
+        PermissionsAndroid.PERMISSIONS.WRITE_EXTERNAL_STORAGE,
+      ]);
+      if (
+        granted["android.permission.READ_EXTERNAL_STORAGE"] ===
+          PermissionsAndroid.RESULTS.GRANTED &&
+        granted["android.permission.WRITE_EXTERNAL_STORAGE"] ===
+          PermissionsAndroid.RESULTS.GRANTED
+      ) {
+        console.log("Storage permissions granted");
+      } else {
+        console.log("Storage permissions denied");
+      }
+    } catch (err) {
+      console.warn(err);
+    }
+  }
+};
+
 type ValueType = {
   title: string;
   category: string;
@@ -47,6 +72,10 @@ type ValueType = {
 type NavigationProps = NativeStackScreenProps<RootStackParamList>;
 
 const Add = ({ navigation }: NavigationProps) => {
+  useEffect(() => {
+    requestStoragePermission();
+  }, []);
+
   const categories = [
     "Plumbing",
     "Motor Mechanics",
@@ -120,7 +149,16 @@ const Add = ({ navigation }: NavigationProps) => {
         .add(data)
         .then(() => {
           ToastAndroid.show("Gig created successfully", ToastAndroid.LONG);
-          navigation.navigate("Home");
+          (values.title = ""),
+            (values.category = ""),
+            (values.description = ""),
+            (values.deliveryTime = ""),
+            (values.features = ""),
+            (values.price = ""),
+            (values.coverPhoto = ""),
+            (values.profileImage = ""),
+            (values.phoneNumber = ""),
+            navigation.navigate("Home");
         });
     } catch (error) {
       console.error("Error creating gig: ", error);

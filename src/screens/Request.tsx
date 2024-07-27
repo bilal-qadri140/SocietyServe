@@ -10,10 +10,12 @@ import {
   TouchableOpacity,
   Button,
   Linking,
+  Alert,
+  Platform,
 } from "react-native";
 import firestore from "@react-native-firebase/firestore";
 import { RootStackParamList } from "../../App";
-
+import { CardField, useStripe } from "@stripe/stripe-react-native";
 type NavigationProps = NativeStackScreenProps<RootStackParamList, "Request">;
 
 const Request = ({ navigation, route }: NavigationProps) => {
@@ -24,13 +26,14 @@ const Request = ({ navigation, route }: NavigationProps) => {
     coverPhoto,
     phoneNumber,
     profileImage,
-    description
+    description,
   } = route.params;
   const chatId = `${userId}_${serviceProviderId}`;
   const [chatExpanded, setChatExpanded] = useState(false);
   const [messages, setMessages] = useState<any[]>([]);
   const [newMessage, setNewMessage] = useState("");
 
+ 
   useEffect(() => {
     const unsubscribe = firestore()
       .collection("chats")
@@ -65,21 +68,23 @@ const Request = ({ navigation, route }: NavigationProps) => {
 
   return (
     <View style={styles.container}>
-      <View style={{ }}>
+      <View style={{}}>
         <Image
           style={{ width: "100%", height: 260 }}
           source={{ uri: profileImage }}
         />
       </View>
-      <View style={[styles.profileSection,{position:'absolute',left:'30%',top:'13.5%'}]}>
+      <View
+        style={[
+          styles.profileSection,
+          { position: "absolute", left: "30%", top: "13.5%" },
+        ]}
+      >
         <Image style={styles.profileImage} source={{ uri: coverPhoto }} />
       </View>
-        <Text style={styles.category}>{category}</Text>
-        <Text style={{fontSize:18, marginHorizontal:8}}>{description}</Text>
-      <TouchableOpacity
-        style={styles.bookButton}
-        onPress={() => navigation.navigate("Payment")}
-      >
+      <Text style={styles.category}>{category}</Text>
+      <Text style={{ fontSize: 18, marginHorizontal: 8 }}>{description}</Text>
+      <TouchableOpacity style={styles.bookButton} onPress={()=>{navigation.navigate('Payment')}}>
         <Text style={styles.bookButtonText}>Book Now</Text>
       </TouchableOpacity>
       <TouchableOpacity style={styles.callButton} onPress={handleCallNow}>
@@ -136,8 +141,8 @@ const styles = StyleSheet.create({
   category: {
     fontSize: 24,
     fontWeight: "bold",
-    textAlign: 'center',
-    marginTop:5
+    textAlign: "center",
+    marginTop: 5,
   },
   bookButton: {
     backgroundColor: "#007bff",
@@ -145,7 +150,7 @@ const styles = StyleSheet.create({
     borderRadius: 5,
     alignItems: "center",
     marginBottom: 10,
-    marginTop:70
+    marginTop: 70,
   },
   bookButtonText: {
     color: "#fff",
